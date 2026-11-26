@@ -55,11 +55,11 @@ export function Dashboard() {
 
         <section className="mt-12">
           <h2 className="mb-5 text-sm font-semibold text-fg-2">Created in the last 7 days</h2>
-          <div className="flex h-40 items-end gap-3 rounded-xl border border-line bg-ink-1 p-5">
+          <div className="flex items-end gap-3 rounded-xl border border-line bg-ink-1 p-5">
             {s.createdLast7Days.map((d) => (
-              <div key={d.date} className="group flex h-full flex-1 flex-col items-center justify-end gap-2">
-                <span className="text-xs tabular-nums text-fg-3 opacity-0 transition-opacity group-hover:opacity-100">{d.count}</span>
-                <div className="w-full max-w-10 rounded-md bg-accent/70 transition-colors group-hover:bg-accent" style={{ height: `${Math.max(4, (d.count / max) * 100)}%`, opacity: d.count ? 1 : 0.25 }} />
+              <div key={d.date} className="group flex flex-1 flex-col items-center gap-2">
+                <span className="text-xs tabular-nums text-fg-2">{d.count}</span>
+                <div className="flex h-24 w-full items-end justify-center"><div className="w-full max-w-10 rounded-md bg-accent/70 transition-colors group-hover:bg-accent" style={{ height: `${Math.max(4, (d.count / max) * 100)}%`, opacity: d.count ? 1 : 0.25 }} /></div>
                 <span className="text-[11px] text-fg-3">{new Date(d.date + "T00:00").toLocaleDateString("en", { weekday: "short" })}</span>
               </div>
             ))}

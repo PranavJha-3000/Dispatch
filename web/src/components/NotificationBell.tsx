@@ -17,7 +17,7 @@ export function NotificationBell() {
     <Dropdown.Root>
       <Dropdown.Trigger aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`} className="relative grid size-9 place-items-center rounded-lg text-fg-2 transition-colors hover:bg-ink-2 hover:text-fg data-[state=open]:bg-ink-2">
         <Bell className="size-[18px]" />
-        {unread > 0 && <span className="absolute right-1.5 top-1.5 grid min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-semibold leading-4 text-ink-0">{unread > 9 ? "9+" : unread}</span>}
+        {unread > 0 && <span className="absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-semibold leading-4 text-ink-0 ring-2 ring-ink-1">{unread > 9 ? "9+" : unread}</span>}
       </Dropdown.Trigger>
       <Dropdown.Portal>
         <Dropdown.Content align="end" sideOffset={8} className="pop-in z-50 w-[360px] overflow-hidden rounded-xl border border-line-2 bg-ink-1 shadow-2xl shadow-black/60">

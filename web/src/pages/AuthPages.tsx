@@ -45,19 +45,23 @@ function Shell({ title, sub, children, footer }: { title: string; sub: string; c
   );
 }
 
+function useFrom() {
+  const from = (useLocation().state as { from?: string } | null)?.from;
+  return (role: "USER" | "ADMIN") => (from && from.startsWith(homeFor(role)) ? from : homeFor(role));
+}
+
 function useSubmit(fn: () => Promise<{ role: "USER" | "ADMIN" }>) {
   const [error, setError] = useState<ApiError | Error | null>(null);
   const [busy, setBusy] = useState(false);
   const nav = useNavigate();
-  const loc = useLocation();
-  const from = (loc.state as { from?: string } | null)?.from;
+  const dest = useFrom();
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
       const u = await fn();
-      nav(from && from.startsWith(homeFor(u.role)) ? from : homeFor(u.role), { replace: true });
+      nav(dest(u.role), { replace: true });
     } catch (err) {
       setError(err as Error);
     } finally {
@@ -75,7 +79,8 @@ export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { submit, busy, error } = useSubmit(() => login(email, password));
-  if (user) return <Navigate to={homeFor(user.role)} replace />;
+  const dest = useFrom();
+  if (user) return <Navigate to={dest(user.role)} replace />;
   const fill = (e: string) => { setEmail(e); setPassword("Dispatch#2026"); };
   return (
     <Shell title="Welcome back" sub="Sign in to your support desk." footer={<>New here? <Link className="text-accent-2 hover:underline" to="/register">Create an account</Link></>}>
@@ -106,7 +111,8 @@ export function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { submit, busy, error } = useSubmit(() => register(name, email, password));
-  if (user) return <Navigate to={homeFor(user.role)} replace />;
+  const dest = useFrom();
+  if (user) return <Navigate to={dest(user.role)} replace />;
   return (
     <Shell title="Create your account" sub="Raise tickets and follow them to resolution." footer={<>Already registered? <Link className="text-accent-2 hover:underline" to="/login">Sign in</Link></>}>
       <form onSubmit={submit} className="space-y-4" noValidate>

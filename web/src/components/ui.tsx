@@ -1,4 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { cloneElement, forwardRef, isValidElement, type ReactElement, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { Loader2 } from "lucide-react";
 import { cn, initials, PRIORITY_LABEL, STATUS_LABEL } from "../lib/utils";
 import type { DeliveryStatus, Priority, TicketStatus } from "../api/types";
@@ -29,7 +29,7 @@ export const Button = forwardRef<HTMLButtonElement, BtnProps>(function Button(
 });
 
 const fieldBase =
-  "w-full rounded-lg border border-line-2 bg-ink-1 px-3 text-sm text-fg placeholder:text-fg-3 transition-colors hover:border-white/20 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25";
+  "w-full rounded-lg border border-line-2 bg-ink-1 px-3 text-sm text-fg placeholder:text-fg-3 transition-colors hover:border-white/20 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 aria-[invalid=true]:border-bad/60";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input({ className, ...p }, ref) {
   return <input ref={ref} className={cn(fieldBase, "h-10", className)} {...p} />;
@@ -45,7 +45,7 @@ export function Field({ label, error, hint, children }: { label: string; error?:
   return (
     <label className="block">
       <span className="mb-1.5 block text-[13px] font-medium text-fg-2">{label}</span>
-      {children}
+      {error && isValidElement(children) ? cloneElement(children as ReactElement<{ "aria-invalid"?: boolean }>, { "aria-invalid": true }) : children}
       {error ? <span role="alert" className="mt-1.5 block text-xs text-bad">{error}</span> : hint ? <span className="mt-1.5 block text-xs text-fg-3">{hint}</span> : null}
     </label>
   );

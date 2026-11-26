@@ -28,13 +28,13 @@ export function AdminQueue() {
 
   return (
     <div className="flex h-full">
-      <section className="flex w-full flex-col border-r border-line md:w-[380px] md:shrink-0" aria-label="Ticket queue">
+      <section className={cn("flex w-full flex-col border-r border-line md:flex md:w-[380px] md:shrink-0", id && "hidden")} aria-label="Ticket queue">
         <header className="border-b border-line p-4">
           <div className="flex items-baseline justify-between"><h1 className="text-lg font-semibold tracking-tight">Tickets</h1><span className="text-xs text-fg-3">{data ? `${data.total} total` : ""}</span></div>
           <div className="relative mt-3"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-3" /><Input className="h-9 pl-9" placeholder="Search title or description" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search tickets" /></div>
           <div className="mt-2 grid grid-cols-3 gap-2">
-            <Select className="h-9 text-[13px]" value={status} onChange={(e) => set("status", e.target.value)} aria-label="Status"><option value="">Any status</option>{STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}</Select>
-            <Select className="h-9 text-[13px]" value={priority} onChange={(e) => set("priority", e.target.value)} aria-label="Priority"><option value="">Any priority</option>{PRIORITIES.map((s) => <option key={s} value={s}>{PRIORITY_LABEL[s]}</option>)}</Select>
+            <Select className="h-9 text-[13px]" value={status} onChange={(e) => set("status", e.target.value)} aria-label="Status"><option value="">Status</option>{STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}</Select>
+            <Select className="h-9 text-[13px]" value={priority} onChange={(e) => set("priority", e.target.value)} aria-label="Priority"><option value="">Priority</option>{PRIORITIES.map((s) => <option key={s} value={s}>{PRIORITY_LABEL[s]}</option>)}</Select>
             <Select className="h-9 text-[13px]" value={sort} onChange={(e) => set("sort", e.target.value)} aria-label="Sort by"><option value="updatedAt">Recent</option><option value="createdAt">Newest</option><option value="priority">Priority</option><option value="status">Status</option></Select>
           </div>
         </header>
@@ -61,7 +61,7 @@ export function AdminQueue() {
           </footer>
         )}
       </section>
-      <div className={cn("min-w-0 flex-1", !id && "hidden md:block")}>{id ? <Outlet /> : <Empty icon={<Inbox className="size-5" />} title="Select a ticket" hint="Pick one from the queue to read the thread and take action." />}</div>
+      <div className={cn("min-w-0 flex-1", !id && "hidden md:block")}>{id ? <Outlet /> : <div className="grid h-full place-items-center"><Empty icon={<Inbox className="size-5" />} title="Select a ticket" hint="Pick one from the queue to read the thread and take action." /></div>}</div>
     </div>
   );
 }
@@ -83,7 +83,7 @@ export function AdminTicketPane() {
         <span className="font-mono text-xs text-fg-3">#{shortId(t.id)}</span>
         <div className="ml-auto flex items-center gap-2">
           <Select className="h-9 w-40 text-[13px]" aria-label="Status" value={t.status} disabled={status.isPending}
-            onChange={(e) => status.mutate(e.target.value as TicketStatus, { onSuccess: () => toast.success(`Status set to ${STATUS_LABEL[e.target.value as TicketStatus]}`), onError: fail })}>
+            onChange={(e) => { const v = e.target.value as TicketStatus; status.mutate(v, { onSuccess: () => toast.success(`Status set to ${STATUS_LABEL[v]}`), onError: fail }); }}>
             {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
           </Select>
           <Select className="h-9 w-32 text-[13px]" aria-label="Priority" value={t.priority} disabled={prio.isPending}
@@ -100,6 +100,7 @@ export function AdminTicketPane() {
           <p className="mt-5 whitespace-pre-wrap break-words leading-relaxed text-fg-2">{t.description}</p>
           <h3 className="mb-5 mt-10 text-sm font-semibold text-fg-2">Conversation</h3>
           <Conversation ticketId={t.id} />
+          <div className="xl:hidden"><h3 className="mb-5 mt-10 text-sm font-semibold text-fg-2">Activity</h3><Timeline ticketId={t.id} /></div>
         </div>
         <aside className="hidden overflow-y-auto border-l border-line p-6 xl:block"><h3 className="mb-5 text-sm font-semibold text-fg-2">Activity</h3><Timeline ticketId={t.id} /></aside>
       </div>

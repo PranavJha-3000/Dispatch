@@ -35,7 +35,7 @@ async function recipients(event: Event): Promise<Note[]> {
     case "STATUS_CHANGED":
       // A resolve emits STATUS_CHANGED and TICKET_RESOLVED; only the latter notifies, so the owner hears once.
       if (payload.to === "RESOLVED") return [];
-      return toOwner("Status changed", `${t} moved from ${String(payload.from)} to ${String(payload.to)}`);
+      return toOwner("Status changed", `${t} moved from ${label(payload.from)} to ${label(payload.to)}`);
     case "TICKET_RESOLVED":
       return toOwner("Ticket resolved", `${t} was marked as resolved`);
     case "COMMENT_ADDED":
@@ -60,3 +60,7 @@ const email: Handler = async (event, ctx) => {
 };
 
 export const defaultHandlers: Record<HandlerName, Handler> = { notification, email };
+
+function label(v: unknown): string {
+  return String(v).toLowerCase().replace(/_/g, " ");
+}

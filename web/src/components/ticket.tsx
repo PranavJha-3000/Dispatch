@@ -16,7 +16,7 @@ export function StatusStepper({ status }: { status: TicketStatus }) {
     <div>
       <ol className="flex items-center" aria-label="Ticket progress">
         {FLOW.map((s, i) => {
-          const done = i < idx || status === "CLOSED";
+          const done = i < idx || status === "CLOSED" || (status === "RESOLVED" && i === 2);
           const current = i === idx;
           return (
             <li key={s} className="flex flex-1 items-center last:flex-none">
