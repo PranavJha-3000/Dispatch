@@ -62,6 +62,7 @@ CREATE TABLE "comments" (
 -- CreateTable
 CREATE TABLE "events" (
     "id" UUID NOT NULL,
+    "seq" SERIAL NOT NULL,
     "type" "EventType" NOT NULL,
     "ticketId" UUID,
     "actorId" UUID,
@@ -116,6 +117,9 @@ CREATE INDEX "tickets_createdAt_idx" ON "tickets"("createdAt");
 
 -- CreateIndex
 CREATE INDEX "comments_ticketId_createdAt_idx" ON "comments"("ticketId", "createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "events_seq_key" ON "events"("seq");
 
 -- CreateIndex
 CREATE INDEX "events_ticketId_createdAt_idx" ON "events"("ticketId", "createdAt");
