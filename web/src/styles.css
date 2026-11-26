@@ -102,3 +102,8 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+
+@keyframes slide-in {
+  from { transform: translateX(32px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
