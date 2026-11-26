@@ -5,3 +5,8 @@ dist
 .pgdata*
 scratch
 *.log
+
+# local agent tooling
+.claude/
+.mcp.json
+skills-lock.json
