@@ -2,7 +2,7 @@
 
 An event-driven support ticket system. Customers raise and follow tickets; admins triage them from a split-pane command center; every change is recorded as a durable event whose delivery to handlers (notifications, email) you can inspect and retry.
 
-**Live demo:** _see the link in the submission notes_ · **API docs:** `/api/docs` (Swagger UI) · **Postman:** [`docs/dispatch.postman_collection.json`](docs/dispatch.postman_collection.json) · **DB design:** [`docs/database.md`](docs/database.md)
+**Live demo:** https://dispatch-fzst.onrender.com (free tier: the first request after idle can take ~50 s to wake) · **API docs:** `/api/docs` (Swagger UI) · **Postman:** [`docs/dispatch.postman_collection.json`](docs/dispatch.postman_collection.json) · **DB design:** [`docs/database.md`](docs/database.md)
 
 | Role | Email | Password |
 |---|---|---|
@@ -21,7 +21,7 @@ A modular monolith: the API serves the built SPA same-origin, so there is one de
 
 ```bash
 npm install
-npm run db:start -w server        # embedded Postgres on :5433 (or point DATABASE_URL at any Postgres)
+npm run db:start -w server        # embedded Postgres on :5433; keeps running, so use its own terminal (or point DATABASE_URL at any Postgres and skip this)
 cp server/.env.example server/.env
 npm run db:deploy -w server       # apply migrations
 npm run db:seed -w server         # demo users and tickets
@@ -30,6 +30,8 @@ npm run dev -w web                # UI on :5173 (proxies /api)
 ```
 
 Or with Docker: `docker compose up --build`, then `docker compose exec app npx tsx prisma/seed.ts` and open http://localhost:3000.
+
+Seeding a hosted database (e.g. Render + Neon): from `server/`, run `NODE_ENV=production SEED_PASSWORD=<pw> DATABASE_URL=<url> npx tsx prisma/seed.ts` (add `SEED_RESET=1` to wipe tickets and reseed).
 
 Tests: `npm test` (spins up its own Postgres; 80 tests). Typecheck: `npm run typecheck`.
 

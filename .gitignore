@@ -10,3 +10,4 @@ scratch
 .claude/
 .mcp.json
 skills-lock.json
+.playwright-mcp/

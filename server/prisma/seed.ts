@@ -2,7 +2,7 @@ import argon2 from "argon2";
 import { prisma } from "../src/db.js";
 import { addComment } from "../src/modules/comments/service.js";
 import { dispatchDue } from "../src/modules/events/dispatcher.js";
-import { changeStatus, createTicket } from "../src/modules/tickets/service.js";
+import { changeStatus, createTicket, updateTicket } from "../src/modules/tickets/service.js";
 import type { AuthUser } from "../src/middleware/auth.js";
 import type { Category, Priority, TicketStatus } from "@prisma/client";
 
@@ -19,13 +19,13 @@ const PEOPLE = [
 
 type Seed = {
   by: string; title: string; description: string; category: Category; priority: Priority;
-  status?: TicketStatus; daysAgo: number; thread?: [admin: boolean, text: string][];
+  status?: TicketStatus; bump?: Priority; daysAgo: number; thread?: [admin: boolean, text: string][];
 };
 
 const TICKETS: Seed[] = [
   { by: "demo", title: "Cannot reset my password", description: "The reset email never arrives, even after checking spam.", category: "ACCOUNT", priority: "HIGH", status: "RESOLVED", daysAgo: 6,
     thread: [[true, "Thanks for flagging this. We found your address was on a suppression list and cleared it."], [false, "Got the email now, I am back in. Thank you!"]] },
-  { by: "demo", title: "Charged twice for the March invoice", description: "I see two identical charges of $49 on my statement.", category: "BILLING", priority: "URGENT", status: "IN_PROGRESS", daysAgo: 5,
+  { by: "demo", title: "Charged twice for the March invoice", description: "I see two identical charges of $49 on my statement.", category: "BILLING", priority: "HIGH", bump: "URGENT", status: "IN_PROGRESS", daysAgo: 5,
     thread: [[true, "Sorry about that. We have confirmed the duplicate and are processing a refund."], [false, "Great, how long will the refund take?"]] },
   { by: "demo", title: "Dark mode toggle is missing", description: "Would love a dark theme option in settings.", category: "FEATURE_REQUEST", priority: "LOW", daysAgo: 4 },
   { by: "jordan", title: "Export to CSV fails with a 500", description: "Clicking Export on the reports page returns an error after about ten seconds.", category: "BUG", priority: "HIGH", status: "IN_PROGRESS", daysAgo: 5,
@@ -73,6 +73,7 @@ async function main() {
     const owner = users[s.by]!;
     const t = await createTicket(owner, { title: s.title, description: s.description, category: s.category, priority: s.priority });
     for (const [isAdmin, text] of s.thread ?? []) await addComment(isAdmin ? admin : owner, t.id, { body: text });
+    if (s.bump) await updateTicket(admin, t.id, { priority: s.bump }); // yields a TICKET_UPDATED event
     if (s.status && s.status !== "OPEN") await changeStatus(admin, t.id, s.status);
 
     // Backdate so the dashboard and timelines look lived-in; keep event/comment order stable.
