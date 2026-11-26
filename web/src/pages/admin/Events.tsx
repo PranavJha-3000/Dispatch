@@ -22,7 +22,7 @@ function Json({ value }: { value: unknown }) {
   const html = JSON.stringify(value, null, 2)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;")
     .replace(/("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false|null)\b|(-?\d+(?:\.\d+)?)/g, (m, str, colon, lit, num) =>
-      str ? (colon ? `<span class="text-accent-2">${str}</span>${colon}` : `<span class="text-ok">${str}</span>`) : lit ? `<span class="text-warn">${lit}</span>` : num ? `<span class="text-info">${num}</span>` : m);
+      str ? (colon ? `<span class="text-fg">${str}</span>${colon}` : `<span class="text-ok">${str}</span>`) : lit ? `<span class="text-warn">${lit}</span>` : num ? `<span class="text-info">${num}</span>` : m);
   return <pre className="overflow-x-auto rounded-lg border border-line bg-ink-0 p-4 font-mono text-[12.5px] leading-relaxed text-fg-2" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
@@ -33,7 +33,7 @@ function Detail({ ev, onClose }: { ev: EventRow; onClose: () => void }) {
     <Dialog.Root open onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/50" />
-        <Dialog.Content className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[560px] flex-col border-l border-line-2 bg-ink-1 shadow-2xl shadow-black/60 data-[state=open]:animate-[slide-in_.28s_var(--ease-out-quint)]">
+        <Dialog.Content className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[560px] flex-col border-l border-line-2 bg-ink-1 data-[state=open]:animate-[slide-in_.28s_var(--ease-out-quint)]">
           <header className="flex items-start justify-between gap-4 border-b border-line p-6">
             <div className="min-w-0">
               <Dialog.Title className="text-lg font-semibold">{EVENT_LABEL[ev.type]}</Dialog.Title>

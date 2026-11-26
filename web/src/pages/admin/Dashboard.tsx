@@ -4,7 +4,7 @@ import { useStats } from "../../api/hooks";
 import { Skeleton } from "../../components/ui";
 import { cn, PRIORITIES, PRIORITY_LABEL, STATUS_LABEL, STATUSES } from "../../lib/utils";
 
-const statusBar: Record<string, string> = { OPEN: "bg-info", IN_PROGRESS: "bg-accent", RESOLVED: "bg-ok", CLOSED: "bg-fg-3" };
+const statusBar: Record<string, string> = { OPEN: "bg-fg-2", IN_PROGRESS: "bg-info", RESOLVED: "bg-ok", CLOSED: "bg-fg-3" };
 const prioBar: Record<string, string> = { LOW: "bg-fg-3", MEDIUM: "bg-fg-2", HIGH: "bg-warn", URGENT: "bg-bad" };
 
 function Bars({ rows, tone, total }: { rows: { key: string; label: string; n: number }[]; tone: Record<string, string>; total: number }) {
@@ -55,11 +55,11 @@ export function Dashboard() {
 
         <section className="mt-12">
           <h2 className="mb-5 text-sm font-semibold text-fg-2">Created in the last 7 days</h2>
-          <div className="flex items-end gap-3 rounded-xl border border-line bg-ink-1 p-5">
+          <div className="flex items-end gap-3 border-t border-line pt-5">
             {s.createdLast7Days.map((d) => (
               <div key={d.date} className="group flex flex-1 flex-col items-center gap-2">
                 <span className="text-xs tabular-nums text-fg-2">{d.count}</span>
-                <div className="flex h-24 w-full items-end justify-center"><div className="w-full max-w-10 rounded-md bg-accent/70 transition-colors group-hover:bg-accent" style={{ height: `${Math.max(4, (d.count / max) * 100)}%`, opacity: d.count ? 1 : 0.25 }} /></div>
+                <div className="flex h-24 w-full items-end justify-center"><div className="w-full max-w-10 rounded-md bg-fg/25 transition-colors group-hover:bg-fg/50" style={{ height: `${Math.max(4, (d.count / max) * 100)}%`, opacity: d.count ? 1 : 0.25 }} /></div>
                 <span className="text-[11px] text-fg-3">{new Date(d.date + "T00:00").toLocaleDateString("en", { weekday: "short" })}</span>
               </div>
             ))}

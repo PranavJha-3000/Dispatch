@@ -9,7 +9,6 @@ function Shell({ title, sub, children, footer }: { title: string; sub: string; c
   return (
     <div className="grid min-h-full lg:grid-cols-[1.05fr_1fr]">
       <aside className="relative hidden overflow-hidden border-r border-line bg-ink-1 p-12 lg:flex lg:flex-col lg:justify-between">
-        <div aria-hidden className="pointer-events-none absolute -left-24 -top-24 size-[520px] rounded-full bg-accent/15 blur-[120px]" />
         <Logo className="relative text-lg" />
         <div className="relative max-w-md">
           <h2 className="text-[34px] font-semibold leading-[1.15] tracking-tight">Every ticket leaves a trail you can inspect.</h2>
@@ -23,7 +22,7 @@ function Shell({ title, sub, children, footer }: { title: string; sub: string; c
               const I = Icon as typeof Zap;
               return (
                 <li key={i} className="flex items-center gap-3">
-                  <span className="grid size-8 place-items-center rounded-lg bg-ink-3 text-accent-2 ring-1 ring-line"><I className="size-4" /></span>
+                  <I className="size-4 shrink-0 text-fg-3" />
                   {t as string}
                 </li>
               );
@@ -94,7 +93,7 @@ export function Login() {
         {formError(error) && <p role="alert" className="rounded-lg border border-bad/25 bg-bad/10 px-3 py-2 text-sm text-bad">{formError(error)}</p>}
         <Button variant="primary" type="submit" loading={busy} className="w-full">Sign in</Button>
       </form>
-      <div className="mt-8 rounded-xl border border-line bg-ink-1 p-4">
+      <div className="mt-8 border-t border-line pt-5">
         <p className="text-[13px] font-medium text-fg-2">Demo accounts</p>
         <div className="mt-3 flex gap-2">
           <Button size="sm" onClick={() => fill("demo@dispatch.dev")}>Use customer</Button>

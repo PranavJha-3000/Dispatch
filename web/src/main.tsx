@@ -24,7 +24,7 @@ createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <AuthProvider>
           <App />
-          <Toaster theme="dark" position="bottom-right" toastOptions={{ style: { background: "#14141b", border: "1px solid rgb(255 255 255 / .1)", color: "#ececf2" } }} />
+          <Toaster theme="dark" position="bottom-right" toastOptions={{ style: { background: "#151515", border: "1px solid rgb(255 255 255 / .1)", color: "#fafafa", borderRadius: 12 } }} />
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

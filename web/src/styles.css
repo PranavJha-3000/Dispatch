@@ -17,30 +17,31 @@
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
 
-  /* Obsidian surfaces: a slight violet undertone, stepped by lightness rather than borders alone */
-  --color-ink-0: #08080b;
-  --color-ink-1: #0d0d12;
-  --color-ink-2: #14141b;
-  --color-ink-3: #1c1c25;
-  --color-ink-4: #262632;
+  /* Neutral near-black surfaces stepped by lightness; colour is reserved for status and priority */
+  --color-ink-0: #0a0a0a;
+  --color-ink-1: #0f0f0f;
+  --color-ink-2: #151515;
+  --color-ink-3: #1d1d1d;
+  --color-ink-4: #2b2b2b;
 
-  --color-line: rgb(255 255 255 / 0.07);
-  --color-line-2: rgb(255 255 255 / 0.12);
+  --color-line: rgb(255 255 255 / 0.08);
+  --color-line-2: rgb(255 255 255 / 0.14);
 
-  --color-fg: #ececf2;
-  --color-fg-2: #a3a3b3;
-  --color-fg-3: #6e6e80;
+  --color-fg: #fafafa;
+  --color-fg-2: #a1a1a1;
+  --color-fg-3: #6f6f6f;
 
-  --color-accent: #8b7cf6;
-  --color-accent-2: #a89cff;
-  --color-accent-soft: rgb(139 124 246 / 0.14);
+  /* "accent" is white: the one monochrome emphasis */
+  --color-accent: #f5f5f5;
+  --color-accent-2: #fafafa;
+  --color-accent-soft: rgb(255 255 255 / 0.08);
 
-  --color-ok: #5fd4a0;
-  --color-warn: #e8b86a;
-  --color-bad: #f0707a;
-  --color-info: #6aa8ff;
+  --color-ok: #4ade80;
+  --color-warn: #fbbf24;
+  --color-bad: #f87171;
+  --color-info: #60a5fa;
 
-  --radius-ui: 8px;
+  --radius-ui: 12px;
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -53,15 +54,16 @@ body {
   background: var(--color-ink-0);
   color: var(--color-fg);
   font-family: var(--font-sans);
-  font-feature-settings: "ss01", "cv11";
+  font-size: 14px;
+  letter-spacing: -0.006em;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 ::selection {
-  background: rgb(139 124 246 / 0.35);
+  background: rgb(255 255 255 / 0.22);
 }
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 1.5px solid rgb(255 255 255 / 0.6);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -70,15 +72,10 @@ body {
   scrollbar-color: var(--color-ink-4) transparent;
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
 .skeleton {
-  background: linear-gradient(90deg, var(--color-ink-2) 25%, var(--color-ink-3) 37%, var(--color-ink-2) 63%);
-  background-size: 200% 100%;
-  animation: shimmer 1.6s ease-in-out infinite;
-  border-radius: 6px;
+  background: var(--color-ink-2);
+  animation: pulse-dot 1.6s ease-in-out infinite;
+  border-radius: 8px;
 }
 @keyframes pop {
   from { opacity: 0; transform: translateY(4px) scale(0.99); }

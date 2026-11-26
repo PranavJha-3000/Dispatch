@@ -22,12 +22,12 @@ export function StatusStepper({ status }: { status: TicketStatus }) {
             <li key={s} className="flex flex-1 items-center last:flex-none">
               <span className="flex items-center gap-2">
                 <span className={cn("grid size-6 place-items-center rounded-full text-[11px] font-semibold ring-1 ring-inset transition-colors",
-                  done ? "bg-accent text-ink-0 ring-accent" : current ? "bg-accent/15 text-accent-2 ring-accent/50" : "bg-ink-2 text-fg-3 ring-white/10")}>
+                  done ? "bg-fg text-ink-0 ring-fg" : current ? "text-fg ring-fg" : "text-fg-3 ring-line-2")}>
                   {done ? <Check className="size-3.5" strokeWidth={3} /> : i + 1}
                 </span>
                 <span className={cn("text-[13px]", current || done ? "text-fg" : "text-fg-3")}>{STATUS_LABEL[s]}</span>
               </span>
-              {i < FLOW.length - 1 && <span className={cn("mx-3 h-px flex-1", i < idx || status === "CLOSED" ? "bg-accent/60" : "bg-line-2")} />}
+              {i < FLOW.length - 1 && <span className={cn("mx-3 h-px flex-1", i < idx || status === "CLOSED" ? "bg-fg/60" : "bg-line-2")} />}
             </li>
           );
         })}
@@ -101,7 +101,7 @@ export function Conversation({ ticketId, canReply = true }: { ticketId: string; 
             <div className="min-w-0 flex-1">
               <header className="flex items-baseline gap-2">
                 <span className="text-sm font-medium">{c.author.name}</span>
-                {c.author.role === "ADMIN" && <span className="rounded bg-accent/15 px-1.5 text-[11px] font-medium text-accent-2">Support</span>}
+                {c.author.role === "ADMIN" && <span className="rounded-full bg-ink-4 px-2 text-[11px] font-medium text-fg">Support</span>}
                 <time className="text-xs text-fg-3" title={fullTime(c.createdAt)} dateTime={c.createdAt}>{timeAgo(c.createdAt)}</time>
               </header>
               <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-fg-2">{c.body}</p>

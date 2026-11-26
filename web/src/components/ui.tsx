@@ -12,12 +12,12 @@ export const Button = forwardRef<HTMLButtonElement, BtnProps>(function Button(
       ref={ref}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center gap-2 rounded-lg font-medium transition-[background,border-color,transform,opacity] duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
-        size === "sm" ? "h-8 px-3 text-[13px]" : "h-10 px-4 text-sm",
-        variant === "primary" && "bg-accent text-ink-0 shadow-[0_0_0_1px_rgb(255_255_255/.12)_inset,0_6px_20px_-8px_rgb(139_124_246/.7)] hover:bg-accent-2",
-        variant === "outline" && "border border-line-2 bg-ink-2 text-fg hover:bg-ink-3",
-        variant === "ghost" && "text-fg-2 hover:bg-ink-2 hover:text-fg",
-        variant === "danger" && "border border-bad/30 bg-bad/10 text-bad hover:bg-bad/20",
+        "inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-medium transition-colors duration-150 disabled:pointer-events-none disabled:opacity-40",
+        size === "sm" ? "h-8 px-3.5 text-[13px]" : "h-10 px-5 text-sm",
+        variant === "primary" && "bg-fg text-ink-0 hover:bg-white/80",
+        variant === "outline" && "border border-line-2 text-fg hover:bg-ink-3",
+        variant === "ghost" && "text-fg-2 hover:bg-ink-3 hover:text-fg",
+        variant === "danger" && "border border-bad/30 text-bad hover:bg-bad/10",
         className,
       )}
       {...p}
@@ -29,7 +29,7 @@ export const Button = forwardRef<HTMLButtonElement, BtnProps>(function Button(
 });
 
 const fieldBase =
-  "w-full rounded-lg border border-line-2 bg-ink-1 px-3 text-sm text-fg placeholder:text-fg-3 transition-colors hover:border-white/20 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 aria-[invalid=true]:border-bad/60";
+  "w-full rounded-xl border border-line bg-ink-2 px-3.5 text-sm text-fg placeholder:text-fg-3 transition-colors hover:border-line-2 focus:border-white/30 focus:outline-none aria-[invalid=true]:border-bad/60";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input({ className, ...p }, ref) {
   return <input ref={ref} className={cn(fieldBase, "h-10", className)} {...p} />;
@@ -52,15 +52,16 @@ export function Field({ label, error, hint, children }: { label: string; error?:
 }
 
 const statusTone: Record<TicketStatus, string> = {
-  OPEN: "text-info bg-info/10 ring-info/25",
-  IN_PROGRESS: "text-accent-2 bg-accent/12 ring-accent/30",
-  RESOLVED: "text-ok bg-ok/10 ring-ok/25",
-  CLOSED: "text-fg-3 bg-white/5 ring-white/10",
+  OPEN: "text-fg-2",
+  IN_PROGRESS: "text-info",
+  RESOLVED: "text-ok",
+  CLOSED: "text-fg-3",
 };
+/** Status is a coloured dot plus plain label: colour carries meaning, the chrome stays quiet. */
 export function StatusBadge({ status, className }: { status: TicketStatus; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset", statusTone[status], className)}>
-      <span className="size-1.5 rounded-full bg-current" />
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium", statusTone[status], className)}>
+      <span className={cn("size-1.5 rounded-full", status === "OPEN" ? "ring-1 ring-inset ring-current" : "bg-current")} />
       {STATUS_LABEL[status]}
     </span>
   );
@@ -82,20 +83,20 @@ export function PriorityMark({ priority, label = true }: { priority: Priority; l
 }
 
 const deliveryTone: Record<DeliveryStatus, string> = {
-  PENDING: "text-fg-2 bg-white/5 ring-white/10",
-  RUNNING: "text-info bg-info/10 ring-info/25",
-  SUCCEEDED: "text-ok bg-ok/10 ring-ok/25",
-  FAILED: "text-warn bg-warn/10 ring-warn/25",
-  DEAD: "text-bad bg-bad/10 ring-bad/25",
+  PENDING: "text-fg-2 ring-line-2",
+  RUNNING: "text-info ring-info/30",
+  SUCCEEDED: "text-ok ring-ok/30",
+  FAILED: "text-warn ring-warn/30",
+  DEAD: "text-bad ring-bad/30",
 };
 export const DeliveryBadge = ({ status }: { status: DeliveryStatus }) => (
-  <span className={cn("inline-flex items-center rounded-md px-1.5 py-0.5 font-mono text-[11px] font-medium ring-1 ring-inset", deliveryTone[status])}>{status.toLowerCase()}</span>
+  <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset", deliveryTone[status])}>{status.toLowerCase()}</span>
 );
 
 export function Avatar({ name, admin, size = 28 }: { name: string; admin?: boolean; size?: number }) {
   return (
     <span
-      className={cn("grid shrink-0 place-items-center rounded-full font-semibold ring-1 ring-inset", admin ? "bg-accent/15 text-accent-2 ring-accent/30" : "bg-ink-3 text-fg-2 ring-white/10")}
+      className={cn("grid shrink-0 place-items-center rounded-full font-medium", admin ? "bg-fg text-ink-0" : "bg-ink-4 text-fg-2")}
       style={{ width: size, height: size, fontSize: size * 0.38 }}
       aria-hidden
     >
@@ -109,7 +110,7 @@ export const Skeleton = ({ className }: { className?: string }) => <div classNam
 export function Empty({ icon, title, hint, action }: { icon: ReactNode; title: string; hint?: string; action?: ReactNode }) {
   return (
     <div className="pop-in grid place-items-center px-6 py-16 text-center">
-      <div className="mb-4 grid size-11 place-items-center rounded-xl bg-ink-2 text-fg-3 ring-1 ring-line">{icon}</div>
+      <div className="mb-4 grid size-10 place-items-center rounded-full bg-ink-3 text-fg-3">{icon}</div>
       <p className="text-[15px] font-medium text-fg">{title}</p>
       {hint && <p className="mt-1 max-w-xs text-sm text-fg-3">{hint}</p>}
       {action && <div className="mt-5">{action}</div>}
@@ -121,8 +122,8 @@ export function Logo({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2 font-semibold tracking-tight", className)}>
       <svg viewBox="0 0 32 32" className="size-6" aria-hidden>
-        <rect width="32" height="32" rx="8" className="fill-ink-3" />
-        <path d="M9 22 L23 10 M23 10 H14 M23 10 V19" stroke="#8b7cf6" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <rect width="32" height="32" rx="16" className="fill-fg" />
+        <path d="M10 22 L22 10 M22 10 H13.5 M22 10 V18.5" stroke="#0a0a0a" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       Dispatch
     </span>

@@ -159,8 +159,8 @@ export function TicketDetailPage() {
                     <Dialog.Root>
                       <Dialog.Trigger asChild><Button size="sm" variant="ghost" className="hover:text-bad"><Trash2 className="size-3.5" />Delete</Button></Dialog.Trigger>
                       <Dialog.Portal>
-                        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-                        <Dialog.Content className="pop-in fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-line-2 bg-ink-1 p-6 shadow-2xl">
+                        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
+                        <Dialog.Content className="pop-in fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-line-2 bg-ink-1 p-6">
                           <Dialog.Title className="text-lg font-semibold">Delete this ticket?</Dialog.Title>
                           <Dialog.Description className="mt-2 text-sm text-fg-2">It will be removed from your list. Support will no longer see it in the queue.</Dialog.Description>
                           <div className="mt-6 flex justify-end gap-2">
@@ -174,7 +174,7 @@ export function TicketDetailPage() {
                 )}
               </div>
               <div className="mt-4 flex flex-wrap items-center gap-3"><StatusBadge status={t.status} /><PriorityMark priority={t.priority} /><span className="text-xs text-fg-3">{CATEGORY_LABEL[t.category]} · #{shortId(t.id)}</span></div>
-              <div className="mt-8 rounded-xl border border-line bg-ink-1 p-5"><StatusStepper status={t.status} /></div>
+              <div className="mt-8 border-y border-line py-5"><StatusStepper status={t.status} /></div>
               <p className="mt-8 whitespace-pre-wrap break-words leading-relaxed text-fg-2">{t.description}</p>
               {!editable && <p className="mt-4 text-xs text-fg-3">Tickets can be edited or deleted only while they're open.</p>}
             </>
