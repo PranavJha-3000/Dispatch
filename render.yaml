@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: dispatch
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false # Postgres connection string (e.g. Neon)
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SEED_PASSWORD
+        sync: false
