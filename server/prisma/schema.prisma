@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum Category {
+  BUG
+  BILLING
+  ACCOUNT
+  FEATURE_REQUEST
+  OTHER
+}
+
+enum EventType {
+  TICKET_CREATED
+  TICKET_UPDATED
+  STATUS_CHANGED
+  COMMENT_ADDED
+  TICKET_RESOLVED
+}
+
+enum DeliveryStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  DEAD
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+
+  tickets       Ticket[]
+  comments      Comment[]
+  events        Event[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Ticket {
+  id          String       @id @default(uuid()) @db.Uuid
+  title       String
+  description String
+  category    Category     @default(OTHER)
+  priority    Priority     @default(MEDIUM)
+  status      TicketStatus @default(OPEN)
+  createdById String       @db.Uuid
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  resolvedAt  DateTime?
+  deletedAt   DateTime?
+
+  createdBy User      @relation(fields: [createdById], references: [id])
+  comments  Comment[]
+  events    Event[]
+
+  @@index([createdById, createdAt])
+  @@index([status, priority])
+  @@index([createdAt])
+  @@map("tickets")
+}
+
+model Comment {
+  id        String   @id @default(uuid()) @db.Uuid
+  ticketId  String   @db.Uuid
+  authorId  String   @db.Uuid
+  body      String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+  author User   @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId, createdAt])
+  @@map("comments")
+}
+
+model Event {
+  id        String    @id @default(uuid()) @db.Uuid
+  type      EventType
+  ticketId  String?   @db.Uuid
+  actorId   String?   @db.Uuid
+  payload   Json
+  createdAt DateTime  @default(now())
+
+  ticket        Ticket?         @relation(fields: [ticketId], references: [id])
+  actor         User?           @relation(fields: [actorId], references: [id])
+  deliveries    EventDelivery[]
+  notifications Notification[]
+
+  @@index([ticketId, createdAt])
+  @@index([type])
+  @@index([createdAt])
+  @@map("events")
+}
+
+model EventDelivery {
+  id            String         @id @default(uuid()) @db.Uuid
+  eventId       String         @db.Uuid
+  handler       String
+  status        DeliveryStatus @default(PENDING)
+  attempts      Int            @default(0)
+  lastError     String?
+  durationMs    Int?
+  nextAttemptAt DateTime       @default(now())
+  leaseToken    String?
+  lockedUntil   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id])
+
+  @@unique([eventId, handler])
+  @@index([status, nextAttemptAt])
+  @@map("event_deliveries")
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  eventId   String    @db.Uuid
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  event Event @relation(fields: [eventId], references: [id])
+
+  @@unique([userId, eventId])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}

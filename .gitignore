@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+.superpowers
+.pgdata*
+scratch
+*.log
