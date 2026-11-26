@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { validate } from "../../middleware/validate.js";
 import { notFound } from "../../errors.js";
+import { commentRoutes } from "../comments/routes.js";
 import { createTicketSchema, listQuerySchema, patchTicketSchema, statusSchema } from "./schema.js";
 import * as service from "./service.js";
 
@@ -31,6 +32,8 @@ export function ticketRoutes() {
   router.patch("/:id/status", requireRole("ADMIN"), validate({ body: statusSchema }), async (req, res) => {
     res.json(await service.changeStatus(req.user!, String(req.params.id), req.body.status));
   });
+
+  router.use("/:id/comments", commentRoutes());
 
   router.delete("/:id", async (req, res) => {
     await service.deleteTicket(req.user!, String(req.params.id));
