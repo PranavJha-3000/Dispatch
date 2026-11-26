@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { validate } from "../../middleware/validate.js";
+import { nudge } from "../events/dispatcher.js";
 import * as service from "./service.js";
 
 const createCommentSchema = z.object({ body: z.string().trim().min(1).max(5000) });
@@ -14,7 +15,9 @@ export function commentRoutes() {
   });
 
   router.post("/", validate({ body: createCommentSchema }), async (req, res) => {
-    res.status(201).json(await service.addComment(req.user!, String((req.params as Record<string, string>).id), req.body));
+    const c = await service.addComment(req.user!, String((req.params as Record<string, string>).id), req.body);
+    nudge();
+    res.status(201).json(c);
   });
 
   return router;

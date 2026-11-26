@@ -3,6 +3,7 @@ import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { validate } from "../../middleware/validate.js";
 import { notFound } from "../../errors.js";
 import { commentRoutes } from "../comments/routes.js";
+import { nudge } from "../events/dispatcher.js";
 import { createTicketSchema, listQuerySchema, patchTicketSchema, statusSchema } from "./schema.js";
 import * as service from "./service.js";
 
@@ -18,7 +19,9 @@ export function ticketRoutes() {
   });
 
   router.post("/", validate({ body: createTicketSchema }), async (req, res) => {
-    res.status(201).json(await service.createTicket(req.user!, req.body));
+    const t = await service.createTicket(req.user!, req.body);
+    nudge();
+    res.status(201).json(t);
   });
 
   router.get("/:id", async (req, res) => {
@@ -26,11 +29,15 @@ export function ticketRoutes() {
   });
 
   router.patch("/:id", validate({ body: patchTicketSchema }), async (req, res) => {
-    res.json(await service.updateTicket(req.user!, String(req.params.id), req.body));
+    const t = await service.updateTicket(req.user!, String(req.params.id), req.body);
+    nudge();
+    res.json(t);
   });
 
   router.patch("/:id/status", requireRole("ADMIN"), validate({ body: statusSchema }), async (req, res) => {
-    res.json(await service.changeStatus(req.user!, String(req.params.id), req.body.status));
+    const t = await service.changeStatus(req.user!, String(req.params.id), req.body.status);
+    nudge();
+    res.json(t);
   });
 
   router.use("/:id/comments", commentRoutes());
