@@ -8,8 +8,8 @@ const server = app.listen(config.port, () => logger.info(`Dispatch listening on 
 const stopDispatcher = startDispatcher();
 
 const shutdown = () => {
-  stopDispatcher();
-  server.close(() => process.exit(0));
+  server.close();
+  void stopDispatcher().finally(() => process.exit(0));
 };
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);

@@ -7,6 +7,7 @@ import type { AuthUser } from "../src/middleware/auth.js";
 import type { Category, Priority, TicketStatus } from "@prisma/client";
 
 // Idempotent: users are upserted; demo tickets are only created into an empty database (SEED_RESET=1 wipes first).
+if (process.env.NODE_ENV === "production" && !process.env.SEED_PASSWORD) throw new Error("SEED_PASSWORD is required in production");
 const PASSWORD = process.env.SEED_PASSWORD ?? "Dispatch#2026";
 
 const PEOPLE = [
@@ -48,9 +49,12 @@ async function main() {
   const hash = await argon2.hash(PASSWORD);
   const users: Record<string, AuthUser & { name: string }> = {};
   for (const p of PEOPLE) {
+    // An existing account with another role may have self-registered under a seed email: never adopt it.
+    const existing = await prisma.user.findUnique({ where: { email: p.email } });
+    if (existing && existing.role !== p.role) throw new Error(`${p.email} already exists with role ${existing.role}; refusing to seed`);
     const u = await prisma.user.upsert({
       where: { email: p.email },
-      update: { name: p.name, role: p.role },
+      update: { name: p.name, passwordHash: hash },
       create: { email: p.email, name: p.name, role: p.role, passwordHash: hash },
     });
     users[p.email.split("@")[0]!] = { id: u.id, role: u.role, name: u.name };
@@ -73,9 +77,10 @@ async function main() {
 
     // Backdate so the dashboard and timelines look lived-in; keep event/comment order stable.
     const created = new Date(Date.now() - s.daysAgo * 86_400_000 - 3_600_000);
-    await prisma.ticket.update({ where: { id: t.id }, data: { createdAt: created, ...(s.status === "RESOLVED" ? { resolvedAt: new Date(created.getTime() + 5 * 3_600_000) } : {}) } });
+    await prisma.ticket.update({ where: { id: t.id }, data: { createdAt: created, updatedAt: new Date(created.getTime() + 3_600_000), ...(s.status === "RESOLVED" ? { resolvedAt: new Date(created.getTime() + 5 * 3_600_000) } : {}) } });
     const evs = await prisma.event.findMany({ where: { ticketId: t.id }, orderBy: { seq: "asc" } });
     for (const [i, e] of evs.entries()) await prisma.event.update({ where: { id: e.id }, data: { createdAt: new Date(created.getTime() + i * 600_000) } });
+    await prisma.ticket.update({ where: { id: t.id }, data: { updatedAt: new Date(created.getTime() + 3_600_000) } });
     const cs = await prisma.comment.findMany({ where: { ticketId: t.id }, orderBy: { createdAt: "asc" } });
     for (const [i, c] of cs.entries()) await prisma.comment.update({ where: { id: c.id }, data: { createdAt: new Date(created.getTime() + (i + 1) * 900_000) } });
   }

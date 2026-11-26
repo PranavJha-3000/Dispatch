@@ -18,6 +18,11 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
       .json({ error: { code: "VALIDATION_ERROR", message: "Invalid request body" } });
     return;
   }
+  // other exposed 4xx from middleware (e.g. 415 unsupported charset/encoding)
+  if (err?.expose && err.status >= 400 && err.status < 500) {
+    res.status(err.status).json({ error: { code: "VALIDATION_ERROR", message: "Invalid request body" } });
+    return;
+  }
   logger.error({ err }, "unhandled error");
   res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
 };

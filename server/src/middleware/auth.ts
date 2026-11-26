@@ -27,7 +27,7 @@ export const requireAuth: RequestHandler = async (req, _res, next) => {
   } catch {
     return next(unauthenticated());
   }
-  const user = await prisma.user.findUnique({ where: { id: sub }, select: { id: true, role: true } }).catch(() => null);
+  const user = await prisma.user.findUnique({ where: { id: sub }, select: { id: true, role: true } });
   if (!user) return next(unauthenticated());
   req.user = user;
   next();

@@ -28,7 +28,7 @@ erDiagram
 | Table | Purpose | Notes |
 |---|---|---|
 | `users` | Accounts and roles | `email` is unique and stored lower-cased. `passwordHash` is argon2. Role is `USER` or `ADMIN`; admins are only created by the seed script. |
-| `tickets` | Support requests | `status` ∈ OPEN, IN_PROGRESS, RESOLVED, CLOSED. `resolvedAt` is set when resolved and cleared on reopen. `deletedAt` implements soft delete. |
+| `tickets` | Support requests | `status` ∈ OPEN, IN_PROGRESS, RESOLVED, CLOSED. `resolvedAt` is set when resolved and kept when closed and cleared on reopen. `deletedAt` implements soft delete. |
 | `comments` | Conversation on a ticket | Tied to a ticket and an author. Body is stored verbatim; the client escapes on render. |
 | `events` | The event log (outbox) | One row per domain event with a JSON `payload` and actor. `seq` is an auto-increment used for a stable order, because events written in one transaction share a timestamp. This table is also the ticket activity timeline and the Event Inspector source. |
 | `event_deliveries` | One row per (event, handler) | Execution record: `status`, `attempts`, `lastError`, `durationMs`, retry schedule (`nextAttemptAt`) and the lease (`leaseToken`, `lockedUntil`). |

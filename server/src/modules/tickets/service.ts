@@ -82,14 +82,14 @@ export async function getTicket(actor: AuthUser, id: string) {
 type Patch = Partial<Pick<Ticket, "title" | "description" | "category" | "priority">>;
 
 export async function updateTicket(actor: AuthUser, id: string, patch: Patch): Promise<TicketDto> {
-  const existing = await assertTicketAccess(actor, id);
-  if (actor.role === "ADMIN") {
-    if (Object.keys(patch).some((k) => k !== "priority")) throw forbidden("Admins can only change priority");
-  } else if (existing.status !== "OPEN") {
-    throw conflict("Only open tickets can be edited");
-  }
+  await assertTicketAccess(actor, id);
+  if (actor.role === "ADMIN" && Object.keys(patch).some((k) => k !== "priority")) throw forbidden("Admins can only change priority");
   return prisma.$transaction(async (tx) => {
-    const current = await tx.ticket.findUniqueOrThrow({ where: { id } });
+    // Lock first so the OPEN check and the diff see the same row a concurrent status change would.
+    await tx.$queryRaw(Prisma.sql`SELECT id FROM tickets WHERE id = ${id}::uuid FOR UPDATE`);
+    const current = await tx.ticket.findFirst({ where: { id, deletedAt: null } });
+    if (!current) throw notFound("Ticket not found");
+    if (actor.role !== "ADMIN" && current.status !== "OPEN") throw conflict("Only open tickets can be edited");
     const changes: Record<string, { from: string; to: string }> = {};
     for (const [k, v] of Object.entries(patch) as [keyof Patch, string][]) {
       if (v !== undefined && current[k] !== v) changes[k] = { from: String(current[k]), to: v };
@@ -115,7 +115,7 @@ export async function changeStatus(actor: AuthUser, id: string, to: TicketStatus
     const now = new Date();
     const t = await tx.ticket.update({
       where: { id },
-      data: { status: to, resolvedAt: to === "RESOLVED" ? now : null },
+      data: { status: to, resolvedAt: to === "RESOLVED" ? now : to === "CLOSED" ? current.resolvedAt : null },
     });
     await recordEvent(tx, {
       type: "STATUS_CHANGED",

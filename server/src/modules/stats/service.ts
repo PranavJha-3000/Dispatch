@@ -14,7 +14,7 @@ export async function getStats() {
     prisma.ticket.groupBy({ by: ["status"], where: live, _count: true }),
     prisma.ticket.groupBy({ by: ["priority"], where: live, _count: true }),
     prisma.ticket.findMany({ where: { ...live, createdAt: { gte: from } }, select: { createdAt: true } }),
-    prisma.ticket.findMany({ where: { ...live, status: "RESOLVED", resolvedAt: { not: null } }, select: { createdAt: true, resolvedAt: true } }),
+    prisma.ticket.findMany({ where: { ...live, resolvedAt: { not: null } }, select: { createdAt: true, resolvedAt: true } }),
     prisma.eventDelivery.count({ where: { status: { in: ["FAILED", "DEAD"] } } }),
   ]);
 

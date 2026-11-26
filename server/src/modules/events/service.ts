@@ -4,6 +4,7 @@ import { notFound } from "../../errors.js";
 import type { AuthUser } from "../../middleware/auth.js";
 import { assertTicketAccess, isUuid } from "../tickets/service.js";
 
+const deliverySelect = { id: true, handler: true, status: true, attempts: true, lastError: true, durationMs: true, nextAttemptAt: true } as const;
 const actorSelect = { select: { id: true, name: true, role: true } } as const;
 
 export async function listEvents(q: { type?: EventType; status?: DeliveryStatus; ticketId?: string; page: number; limit: number }) {
@@ -19,7 +20,7 @@ export async function listEvents(q: { type?: EventType; status?: DeliveryStatus;
       orderBy: { seq: "desc" },
       skip: (q.page - 1) * q.limit,
       take: q.limit,
-      include: { actor: actorSelect, ticket: { select: { id: true, title: true } }, deliveries: { orderBy: { handler: "asc" } } },
+      include: { actor: actorSelect, ticket: { select: { id: true, title: true } }, deliveries: { orderBy: { handler: "asc" }, select: deliverySelect } },
     }),
   ]);
   return { items, total, page: q.page, limit: q.limit };
@@ -29,7 +30,7 @@ export async function getEvent(id: string) {
   if (!isUuid(id)) throw notFound("Event not found");
   const ev = await prisma.event.findUnique({
     where: { id },
-    include: { actor: actorSelect, ticket: { select: { id: true, title: true } }, deliveries: { orderBy: { handler: "asc" } } },
+    include: { actor: actorSelect, ticket: { select: { id: true, title: true } }, deliveries: { orderBy: { handler: "asc" }, select: deliverySelect } },
   });
   if (!ev) throw notFound("Event not found");
   return ev;

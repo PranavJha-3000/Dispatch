@@ -14,7 +14,7 @@ const cookieOptions: CookieOptions = {
   path: "/",
 };
 
-export function authRoutes(loginRateLimit = config.loginRateLimit) {
+export function authRoutes(loginRateLimit = config.loginRateLimit, registerRateLimit = 30) {
   const router = Router();
 
   // Only failed logins count, so legitimate use is never throttled.
@@ -22,12 +22,23 @@ export function authRoutes(loginRateLimit = config.loginRateLimit) {
     windowMs: 15 * 60 * 1000,
     limit: loginRateLimit,
     skipSuccessfulRequests: true,
+    // per IP and account, so one account can't be hammered from many addresses without also tripping IP limits
+    keyGenerator: (req) => `${req.ip}|${String(req.body?.email ?? "").toLowerCase()}`,
+    validate: { keyGeneratorIpFallback: false },
     standardHeaders: "draft-7",
     legacyHeaders: false,
     handler: (_req, _res, next) => next(new AppError(429, "RATE_LIMITED", "Too many attempts, try again later")),
   });
 
-  router.post("/register", validate({ body: registerSchema }), async (req, res) => {
+  const registerLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: registerRateLimit,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    handler: (_req, _res, next) => next(new AppError(429, "RATE_LIMITED", "Too many sign-ups, try again later")),
+  });
+
+  router.post("/register", registerLimiter, validate({ body: registerSchema }), async (req, res) => {
     res.status(201).json(await service.register(req.body));
   });
 

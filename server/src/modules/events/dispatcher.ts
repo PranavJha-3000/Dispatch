@@ -71,8 +71,13 @@ async function run(d: Claimed, now: Date): Promise<void> {
         nextAttemptAt: new Date(now.getTime() + BASE_BACKOFF_MS * 2 ** (d.attempts - 1)),
       };
   // Conditional on the lease token: a worker that lost its lease cannot overwrite the new owner's result.
-  const res = await prisma.eventDelivery.updateMany({ where: { id: d.id, status: "RUNNING", leaseToken: d.leaseToken }, data });
-  if (res.count === 0) logger.warn({ deliveryId: d.id }, "delivery lease lost; result discarded");
+  try {
+    const res = await prisma.eventDelivery.updateMany({ where: { id: d.id, status: "RUNNING", leaseToken: d.leaseToken }, data });
+    if (res.count === 0) logger.warn({ deliveryId: d.id }, "delivery lease lost; result discarded");
+  } catch (err) {
+    // Leave it RUNNING: lease expiry recovers it, and the rest of the batch must still run.
+    logger.error({ err, deliveryId: d.id }, "could not record delivery result");
+  }
 }
 
 /** Processes due deliveries once. Returns how many were run. Safe to call concurrently. */
@@ -101,13 +106,19 @@ export async function retryDelivery(id: string): Promise<void> {
 let enabled = false;
 let running = false;
 let again = false;
+let current: Promise<void> | null = null;
 
-async function pump(): Promise<void> {
+function pump(): Promise<void> {
   if (running) {
     again = true;
-    return;
+    return current ?? Promise.resolve();
   }
   running = true;
+  current = pass();
+  return current;
+}
+
+async function pass(): Promise<void> {
   try {
     do {
       again = false;
@@ -125,12 +136,14 @@ export function nudge(): void {
   if (enabled) void pump();
 }
 
-export function startDispatcher(): () => void {
+/** Returns an async stop function that resolves once the in-flight pass has finished. */
+export function startDispatcher(): () => Promise<void> {
   enabled = true;
   const timer = setInterval(() => void pump(), config.dispatcherIntervalMs);
   void pump();
-  return () => {
+  return async () => {
     enabled = false;
     clearInterval(timer);
+    await current;
   };
 }

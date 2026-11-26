@@ -12,7 +12,7 @@ import { ticketRoutes } from "./modules/tickets/routes.js";
 import { notificationRoutes } from "./modules/notifications/routes.js";
 import { adminRoutes } from "./modules/events/routes.js";
 
-export type AppOptions = { loginRateLimit?: number };
+export type AppOptions = { loginRateLimit?: number; registerRateLimit?: number };
 
 export function createApp(opts: AppOptions = {}) {
   const app = express();
@@ -44,7 +44,7 @@ export function createApp(opts: AppOptions = {}) {
 
 // Module routers are registered here as each module lands.
 function mountModules(api: Router, opts: AppOptions) {
-  api.use("/auth", authRoutes(opts.loginRateLimit));
+  api.use("/auth", authRoutes(opts.loginRateLimit, opts.registerRateLimit));
   api.use("/tickets", ticketRoutes());
   api.use("/notifications", notificationRoutes());
   api.use("/admin", adminRoutes());
