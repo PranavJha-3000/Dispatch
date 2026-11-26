@@ -1,0 +1,342 @@
+openapi: 3.0.3
+info:
+  title: Dispatch API
+  version: 1.0.0
+  description: |
+    Support ticket management API with a persistent, observable event pipeline.
+
+    **Authentication:** `POST /api/auth/login` sets an httpOnly `dispatch_token` cookie (JWT, 1h).
+    **CSRF:** every state-changing request (POST/PATCH/PUT/DELETE) must send the header
+    `X-Requested-With: dispatch`, and any `Origin` header must match the host.
+    **Errors:** all errors use `{ "error": { "code", "message", "details?" } }`.
+servers:
+  - url: /
+tags:
+  - name: Auth
+  - name: Tickets
+  - name: Comments
+  - name: Notifications
+  - name: Admin
+security:
+  - cookieAuth: []
+paths:
+  /api/health:
+    get:
+      tags: [Auth]
+      summary: Liveness probe
+      security: []
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, properties: { status: { type: string, example: ok } } } } } }
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a USER account (admins are seeded, never self-registered)
+      security: []
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/RegisterInput" } } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/PublicUser" } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in (sets the auth cookie). Failed attempts are rate limited.
+      security: []
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LoginInput" } } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/PublicUser" } } } }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "429": { description: Too many failed attempts, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Clear the auth cookie
+      security: []
+      responses:
+        "204": { description: Logged out }
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Current user
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/PublicUser" } } } }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /api/tickets:
+    get:
+      tags: [Tickets]
+      summary: List tickets (users see their own; admins see all)
+      parameters:
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/TicketStatus" } }
+        - { name: priority, in: query, schema: { $ref: "#/components/schemas/Priority" } }
+        - { name: q, in: query, schema: { type: string, maxLength: 100 }, description: Case-insensitive search in title and description }
+        - { name: sort, in: query, schema: { type: string, enum: [createdAt, updatedAt, priority, status], default: createdAt } }
+        - { name: order, in: query, schema: { type: string, enum: [asc, desc], default: desc } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/TicketPage" } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+    post:
+      tags: [Tickets]
+      summary: Create a ticket (emits TICKET_CREATED)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CreateTicket" } } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Ticket" } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+  /api/tickets/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Tickets]
+      summary: Ticket detail. Foreign, deleted or malformed ids return 404.
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/TicketDetail" } } } }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Tickets]
+      summary: Edit a ticket (emits TICKET_UPDATED when something changed). Users edit their own OPEN tickets; admins may only change priority. Status is not editable here.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PatchTicket" } } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Ticket" } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [Tickets]
+      summary: Soft-delete your own OPEN ticket
+      responses:
+        "204": { description: Deleted }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/tickets/{id}/status:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    patch:
+      tags: [Tickets]
+      summary: Change status (admin). Emits STATUS_CHANGED, and TICKET_RESOLVED when moving to RESOLVED. Same status is a no-op.
+      description: "Allowed transitions: OPEN→{IN_PROGRESS,RESOLVED,CLOSED}; IN_PROGRESS→{OPEN,RESOLVED,CLOSED}; RESOLVED→{OPEN,IN_PROGRESS,CLOSED}; CLOSED→{OPEN}."
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [status], properties: { status: { $ref: "#/components/schemas/TicketStatus" } } } } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Ticket" } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/tickets/{id}/comments:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Comments]
+      summary: List comments, oldest first
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Comment" } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [Comments]
+      summary: Add a comment (emits COMMENT_ADDED). Owner or any admin.
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [body], properties: { body: { type: string, minLength: 1, maxLength: 5000 } } } } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Comment" } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/tickets/{id}/activity:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Tickets]
+      summary: Ticket activity timeline (events, oldest first)
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ActivityItem" } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: Your latest 50 notifications and unread count
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: "#/components/schemas/Notification" } }, unreadCount: { type: integer } } } } } }
+  /api/notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: Mark all your notifications read
+      responses:
+        "204": { description: Done }
+  /api/notifications/{id}/read:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    patch:
+      tags: [Notifications]
+      summary: Mark one of your notifications read
+      responses:
+        "200": { description: OK }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/admin/events:
+    get:
+      tags: [Admin]
+      summary: Event Inspector list (admin). Newest first, with actor and per-handler deliveries.
+      parameters:
+        - { name: type, in: query, schema: { $ref: "#/components/schemas/EventType" } }
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/DeliveryStatus" }, description: Events having a delivery in this status }
+        - { name: ticketId, in: query, schema: { type: string, format: uuid } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: "#/components/schemas/EventWithDeliveries" } }, total: { type: integer }, page: { type: integer }, limit: { type: integer } } } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/events/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Admin]
+      summary: Event detail with payload and deliveries (admin)
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/EventWithDeliveries" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/admin/event-deliveries/{id}/retry:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: [Admin]
+      summary: Retry a FAILED or DEAD delivery (admin)
+      responses:
+        "200": { description: Re-queued }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/admin/stats:
+    get:
+      tags: [Admin]
+      summary: Dashboard statistics (admin)
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Stats" } } } }
+components:
+  securitySchemes:
+    cookieAuth: { type: apiKey, in: cookie, name: dispatch_token }
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+  responses:
+    ValidationError: { description: Invalid input, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    Unauthenticated: { description: Missing or invalid session, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    Forbidden: { description: Not allowed for your role, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    NotFound: { description: Not found, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    Conflict: { description: State conflict, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, enum: [VALIDATION_ERROR, UNAUTHENTICATED, FORBIDDEN, NOT_FOUND, CONFLICT, RATE_LIMITED, INTERNAL] }
+            message: { type: string }
+            details: { type: array, items: { type: object } }
+    Role: { type: string, enum: [USER, ADMIN] }
+    TicketStatus: { type: string, enum: [OPEN, IN_PROGRESS, RESOLVED, CLOSED] }
+    Priority: { type: string, enum: [LOW, MEDIUM, HIGH, URGENT] }
+    Category: { type: string, enum: [BUG, BILLING, ACCOUNT, FEATURE_REQUEST, OTHER] }
+    EventType: { type: string, enum: [TICKET_CREATED, TICKET_UPDATED, STATUS_CHANGED, COMMENT_ADDED, TICKET_RESOLVED] }
+    DeliveryStatus: { type: string, enum: [PENDING, RUNNING, SUCCEEDED, FAILED, DEAD] }
+    PublicUser:
+      type: object
+      properties: { id: { type: string, format: uuid }, name: { type: string }, email: { type: string }, role: { $ref: "#/components/schemas/Role" } }
+    RegisterInput:
+      type: object
+      required: [name, email, password]
+      properties: { name: { type: string, minLength: 2, maxLength: 80 }, email: { type: string, format: email }, password: { type: string, minLength: 8, maxLength: 128 } }
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties: { email: { type: string }, password: { type: string } }
+    CreateTicket:
+      type: object
+      required: [title, description]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        description: { type: string, minLength: 1, maxLength: 5000 }
+        category: { $ref: "#/components/schemas/Category" }
+        priority: { $ref: "#/components/schemas/Priority" }
+    PatchTicket:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        description: { type: string, minLength: 1, maxLength: 5000 }
+        category: { $ref: "#/components/schemas/Category" }
+        priority: { $ref: "#/components/schemas/Priority" }
+    Ticket:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        category: { $ref: "#/components/schemas/Category" }
+        priority: { $ref: "#/components/schemas/Priority" }
+        status: { $ref: "#/components/schemas/TicketStatus" }
+        createdById: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        resolvedAt: { type: string, format: date-time, nullable: true }
+    TicketDetail:
+      allOf:
+        - $ref: "#/components/schemas/Ticket"
+        - type: object
+          properties:
+            commentCount: { type: integer }
+            createdBy: { type: object, properties: { id: { type: string }, name: { type: string } } }
+    TicketPage:
+      type: object
+      properties: { items: { type: array, items: { $ref: "#/components/schemas/TicketDetail" } }, total: { type: integer }, page: { type: integer }, limit: { type: integer } }
+    Comment:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        ticketId: { type: string, format: uuid }
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+        author: { type: object, properties: { id: { type: string }, name: { type: string }, role: { $ref: "#/components/schemas/Role" } } }
+    ActivityItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { $ref: "#/components/schemas/EventType" }
+        payload: { type: object }
+        createdAt: { type: string, format: date-time }
+        actor: { type: object, nullable: true, properties: { id: { type: string }, name: { type: string }, role: { $ref: "#/components/schemas/Role" } } }
+    Notification:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        body: { type: string }
+        ticketId: { type: string, format: uuid, nullable: true }
+        readAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+    Delivery:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        handler: { type: string, enum: [notification, email] }
+        status: { $ref: "#/components/schemas/DeliveryStatus" }
+        attempts: { type: integer }
+        lastError: { type: string, nullable: true }
+        durationMs: { type: integer, nullable: true }
+        nextAttemptAt: { type: string, format: date-time }
+    EventWithDeliveries:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        seq: { type: integer }
+        type: { $ref: "#/components/schemas/EventType" }
+        payload: { type: object }
+        createdAt: { type: string, format: date-time }
+        actor: { type: object, nullable: true, properties: { id: { type: string }, name: { type: string }, role: { $ref: "#/components/schemas/Role" } } }
+        ticket: { type: object, nullable: true, properties: { id: { type: string }, title: { type: string } } }
+        deliveries: { type: array, items: { $ref: "#/components/schemas/Delivery" } }
+    Stats:
+      type: object
+      properties:
+        total: { type: integer }
+        byStatus: { type: object, additionalProperties: { type: integer } }
+        byPriority: { type: object, additionalProperties: { type: integer } }
+        createdLast7Days: { type: array, items: { type: object, properties: { date: { type: string }, count: { type: integer } } } }
+        avgResolutionHours: { type: number, nullable: true }
+        failedDeliveries: { type: integer }

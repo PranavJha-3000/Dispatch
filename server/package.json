@@ -14,7 +14,8 @@
     "db:start": "tsx scripts/db.ts",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "docs:postman": "tsx scripts/postman.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",

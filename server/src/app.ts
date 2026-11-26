@@ -4,6 +4,7 @@ import helmet from "helmet";
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { config } from "./config.js";
+import { docsRoutes } from "./docs.js";
 import { csrfGuard } from "./middleware/csrf.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { authRoutes } from "./modules/auth/routes.js";
@@ -17,6 +18,8 @@ export function createApp(opts: AppOptions = {}) {
   const app = express();
   if (config.nodeEnv === "production") app.set("trust proxy", 1);
   app.disable("x-powered-by");
+  // Swagger UI needs inline scripts, so it is mounted ahead of helmet's CSP.
+  app.use("/api/docs", docsRoutes());
   app.use(helmet());
   app.use(express.json({ limit: "100kb" }));
   app.use(cookieParser());
