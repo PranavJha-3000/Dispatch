@@ -9,6 +9,7 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { authRoutes } from "./modules/auth/routes.js";
 import { ticketRoutes } from "./modules/tickets/routes.js";
 import { notificationRoutes } from "./modules/notifications/routes.js";
+import { adminRoutes } from "./modules/events/routes.js";
 
 export type AppOptions = { loginRateLimit?: number };
 
@@ -43,4 +44,5 @@ function mountModules(api: Router, opts: AppOptions) {
   api.use("/auth", authRoutes(opts.loginRateLimit));
   api.use("/tickets", ticketRoutes());
   api.use("/notifications", notificationRoutes());
+  api.use("/admin", adminRoutes());
 }

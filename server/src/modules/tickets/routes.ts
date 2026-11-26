@@ -4,6 +4,7 @@ import { validate } from "../../middleware/validate.js";
 import { notFound } from "../../errors.js";
 import { commentRoutes } from "../comments/routes.js";
 import { nudge } from "../events/dispatcher.js";
+import { getTicketActivity } from "../events/service.js";
 import { createTicketSchema, listQuerySchema, patchTicketSchema, statusSchema } from "./schema.js";
 import * as service from "./service.js";
 
@@ -41,6 +42,10 @@ export function ticketRoutes() {
   });
 
   router.use("/:id/comments", commentRoutes());
+
+  router.get("/:id/activity", async (req, res) => {
+    res.json(await getTicketActivity(req.user!, String(req.params.id)));
+  });
 
   router.delete("/:id", async (req, res) => {
     await service.deleteTicket(req.user!, String(req.params.id));
